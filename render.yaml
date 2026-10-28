@@ -3,7 +3,7 @@ services:
     name: wanbiz-eventpass
     runtime: node
     plan: free
-    buildCommand: npm install --global bun && bun install --frozen-lockfile && bun run build
+    buildCommand: bun install --frozen-lockfile && bun run build
     startCommand: bun run start
     healthCheckPath: /api/health
     envVars:
