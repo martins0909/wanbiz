@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: wanbiz-eventpass
+    runtime: node
+    plan: free
+    buildCommand: npm install --global bun && bun install --frozen-lockfile && bun run build
+    startCommand: bun run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NITRO_PRESET
+        value: node-server
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: wanbiz
+      - key: SESSION_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_INITIAL_PASSWORD
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
