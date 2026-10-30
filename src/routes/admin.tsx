@@ -88,10 +88,12 @@ function AdminLogin() {
 function AdminDashboard({ user }: { user: NonNullable<ReturnType<typeof useAuth>["user"]> }) {
   const { logout } = useAuth();
   const [section, setSection] = useState<Section>("overview");
-  const [data, setData] = useState<AdminData>({});
+  const [data, setData] = useState<{ section: Section; value: AdminData } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
+  const sectionData = data?.section === section ? data.value : {};
+  const loading = busy || (!error && data?.section !== section);
 
   useEffect(() => {
     let active = true;
@@ -104,7 +106,7 @@ function AdminDashboard({ user }: { user: NonNullable<ReturnType<typeof useAuth>
         return result;
       })
       .then((result) => {
-        if (active) setData(result);
+        if (active) setData({ section, value: result });
       })
       .catch((cause: unknown) => {
         if (active) setError(cause instanceof Error ? cause.message : "Could not load admin data.");
@@ -159,7 +161,10 @@ function AdminDashboard({ user }: { user: NonNullable<ReturnType<typeof useAuth>
           <button
             key={id}
             type="button"
-            onClick={() => setSection(id)}
+            onClick={() => {
+              setError(null);
+              setSection(id);
+            }}
             aria-current={section === id ? "page" : undefined}
             className={`inline-flex min-h-10 items-center gap-2 border-b-2 px-3 text-sm font-medium ${section === id ? "border-brand-red text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
@@ -175,7 +180,7 @@ function AdminDashboard({ user }: { user: NonNullable<ReturnType<typeof useAuth>
           title="Refresh dashboard"
           onClick={() => setRevision((current) => current + 1)}
         >
-          <RefreshCw className={`size-4 ${busy ? "animate-spin" : ""}`} />
+          <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </nav>
 
@@ -184,21 +189,21 @@ function AdminDashboard({ user }: { user: NonNullable<ReturnType<typeof useAuth>
           {error}
         </p>
       )}
-      {busy && <p className="py-8 text-sm text-muted-foreground">Loading…</p>}
-      {!busy && !error && section === "overview" && <Overview data={data} />}
-      {!busy && !error && section === "users" && (
+      {loading && <p className="py-8 text-sm text-muted-foreground">Loading…</p>}
+      {!loading && !error && section === "overview" && <Overview data={sectionData} />}
+      {!loading && !error && section === "users" && (
         <UsersTable
-          data={data}
+          data={sectionData}
           onStatusChange={(id, status) => void changeStatus("user", id, status).catch(setError)}
         />
       )}
-      {!busy && !error && section === "events" && (
+      {!loading && !error && section === "events" && (
         <EventsTable
-          data={data}
+          data={sectionData}
           onStatusChange={(id, status) => void changeStatus("event", id, status).catch(setError)}
         />
       )}
-      {!busy && !error && section === "payments" && <PaymentsTable data={data} />}
+      {!loading && !error && section === "payments" && <PaymentsTable data={sectionData} />}
     </section>
   );
 }
