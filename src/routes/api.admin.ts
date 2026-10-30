@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { currentUser } from "@/lib/server/auth";
 import { getMongoDb } from "@/lib/server/mongodb";
+import { isAllowedRequestOrigin } from "@/lib/server/origin";
 
 const mutationSchema = z.discriminatedUnion("resource", [
   z.object({
@@ -64,8 +65,7 @@ export const Route = createFileRoute("/api/admin")({
         return Response.json({ error: "Unknown admin section." }, { status: 404 });
       },
       PATCH: async ({ request }) => {
-        const origin = request.headers.get("origin");
-        if (origin && origin !== new URL(request.url).origin) {
+        if (!isAllowedRequestOrigin(request)) {
           return Response.json({ error: "Request origin is not allowed." }, { status: 403 });
         }
         const admin = await requireAdmin(request);

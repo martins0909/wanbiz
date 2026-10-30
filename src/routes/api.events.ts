@@ -4,6 +4,7 @@ import { z } from "zod";
 import { currentUser } from "@/lib/server/auth";
 import { uploadEventImage } from "@/lib/server/cloudinary";
 import { getMongoDb } from "@/lib/server/mongodb";
+import { isAllowedRequestOrigin } from "@/lib/server/origin";
 
 const eventSchema = z.object({
   name: z.string().trim().min(3).max(160),
@@ -42,8 +43,7 @@ export const Route = createFileRoute("/api/events")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const origin = request.headers.get("origin");
-        if (origin && origin !== new URL(request.url).origin) {
+        if (!isAllowedRequestOrigin(request)) {
           return Response.json({ error: "Request origin is not allowed." }, { status: 403 });
         }
 

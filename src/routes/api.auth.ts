@@ -10,6 +10,7 @@ import {
   requestPasswordReset,
   resetUserPassword,
 } from "@/lib/server/auth";
+import { isAllowedRequestOrigin } from "@/lib/server/origin";
 
 const registerSchema = z.object({
   action: z.literal("register"),
@@ -50,8 +51,7 @@ export const Route = createFileRoute("/api/auth")({
         }
       },
       POST: async ({ request }) => {
-        const origin = request.headers.get("origin");
-        if (origin && origin !== new URL(request.url).origin) {
+        if (!isAllowedRequestOrigin(request)) {
           return Response.json({ error: "Request origin is not allowed." }, { status: 403 });
         }
 
