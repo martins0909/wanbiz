@@ -142,6 +142,7 @@ export interface SessionUser {
   email: string;
   phone: string;
   role: UserRole;
+  walletBalance?: number;
   organizationName?: string;
   businessEmail?: string;
   businessPhone?: string;

@@ -33,8 +33,9 @@ function DashboardOverview() {
   const { data: invitations } = useSuspenseQuery(invitationsQuery());
   const { data: wallet } = useSuspenseQuery(walletQuery());
   const { data: membership } = useSuspenseQuery(membershipQuery());
-  const { membershipStatus, isAuthenticated } = useAuth();
-  const status = isAuthenticated ? membershipStatus : membership.status;
+  const { isAuthenticated, user } = useAuth();
+  const status = membership.status;
+  const walletBalance = user?.walletBalance ?? wallet.balance;
 
   const upcoming = tickets.filter((ticket) => ticket.status === "ACTIVE");
   const pendingInvites = invitations.filter((invite) => invite.status === "PENDING");
@@ -43,7 +44,7 @@ function DashboardOverview() {
     <div className="space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Active tickets" value={`${upcoming.length}`} icon={Ticket} />
-        <StatCard label="Wallet balance" value={formatNaira(wallet.balance)} icon={Wallet} />
+        <StatCard label="Wallet balance" value={formatNaira(walletBalance)} icon={Wallet} />
         <StatCard label="Pending invitations" value={`${pendingInvites.length}`} icon={Mail} />
         <StatCard label="TicketPass" value={status.replace(/_/g, " ")} icon={IdCard} />
       </div>
@@ -87,7 +88,7 @@ function DashboardOverview() {
         <div className="rounded-2xl border border-border bg-card p-5">
           <h2 className="text-base font-bold">Invitations</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Your wallet is charged only after a recipient accepts the invitation.
+            Invitation sending and acceptance are not connected yet.
           </p>
           <Button asChild variant="outline" className="mt-4">
             <Link to="/dashboard/invitations">Manage invitations</Link>

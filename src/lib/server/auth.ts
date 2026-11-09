@@ -16,6 +16,7 @@ interface UserDocument {
   organizationName?: string;
   businessEmail?: string;
   businessPhone?: string;
+  walletBalance?: number;
   status: "ACTIVE" | "SUSPENDED";
   createdAt: Date;
 }
@@ -101,6 +102,7 @@ function publicUser(user: UserDocument): SessionUser {
     email: user.email,
     phone: user.phone,
     role: user.role,
+    walletBalance: user.walletBalance ?? 0,
     ...(user.organizationName ? { organizationName: user.organizationName } : {}),
     ...(user.businessEmail ? { businessEmail: user.businessEmail } : {}),
     ...(user.businessPhone ? { businessPhone: user.businessPhone } : {}),

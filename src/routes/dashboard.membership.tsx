@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { membershipQuery } from "@/lib/data";
 import { formatNaira, formatShortDate } from "@/lib/format";
-import { notifyPaymentsComingSoon } from "@/lib/payments/notify";
 import { useAuth } from "@/lib/auth/auth-context";
 
 export const Route = createFileRoute("/dashboard/membership")({
@@ -25,8 +24,8 @@ export const Route = createFileRoute("/dashboard/membership")({
 
 function MembershipDashboardPage() {
   const { data: membership } = useSuspenseQuery(membershipQuery());
-  const { isAuthenticated, membershipStatus, setMembershipStatus, user } = useAuth();
-  const status = isAuthenticated ? membershipStatus : membership.status;
+  const { user } = useAuth();
+  const status = membership.status;
   const active = status === "ACTIVE";
 
   return (
@@ -59,12 +58,9 @@ function MembershipDashboardPage() {
               {!active && (
                 <Button
                   className="bg-gradient-brand text-primary-foreground"
-                  onClick={() => {
-                    notifyPaymentsComingSoon("MEMBERSHIP", "Your TicketPass request has been saved.");
-                    if (isAuthenticated) setMembershipStatus("ACTIVE");
-                  }}
+                  disabled
                 >
-                  Become a Member
+                  Membership activation unavailable
                 </Button>
               )}
               <Button asChild variant="outline">
@@ -97,9 +93,9 @@ function MembershipDashboardPage() {
               <QrPlaceholder label={active ? "Membership QR ready" : "QR issued after activation"} />
             </div>
             <dl className="mt-5 space-y-2.5 text-sm">
-              <Row label="Member" value={active ? (user?.fullName ?? membership.memberName ?? "EventPass Member") : "—"} />
-              <Row label="Membership ID" value={active ? (membership.membershipId ?? "EP-MEM-004821") : "—"} />
-              <Row label="Joined" value={membership.joinedAt ? formatShortDate(membership.joinedAt) : active ? "Today" : "—"} />
+              <Row label="Member" value={active ? (user?.fullName ?? membership.memberName ?? "—") : "—"} />
+              <Row label="Membership ID" value={active ? (membership.membershipId ?? "—") : "—"} />
+              <Row label="Joined" value={membership.joinedAt ? formatShortDate(membership.joinedAt) : "—"} />
             </dl>
           </div>
         </aside>

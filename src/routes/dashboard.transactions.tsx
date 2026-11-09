@@ -56,6 +56,11 @@ function TransactionsPage() {
             </Badge>
           </div>
         ))}
+        {wallet.transactions.length === 0 && (
+          <p className="p-8 text-center text-sm text-muted-foreground">
+            No transaction records yet.
+          </p>
+        )}
       </div>
     </div>
   );

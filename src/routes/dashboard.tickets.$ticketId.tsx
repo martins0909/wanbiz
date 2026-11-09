@@ -44,6 +44,7 @@ function TicketDetailPage() {
   const { data: ticket } = useSuspenseQuery(ticketQuery(ticketId));
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   if (!ticket) return null;
+  const receiptTicket = ticket;
 
   async function downloadReceipt() {
     setDownloadingReceipt(true);
@@ -72,20 +73,20 @@ function TicketDetailPage() {
       receipt.line(margin, y, 190, y);
       y += 12;
       receipt.setFontSize(10);
-      addRow("Event", ticket.eventName);
-      addRow("Event date", formatEventDate(ticket.eventDate));
-      addRow("Venue", `${ticket.venue}, ${ticket.city}`);
-      addRow("Ticket type", ticket.ticketTypeName);
-      addRow("Amount paid", `NGN ${ticket.price.toLocaleString("en-NG")}`);
-      addRow("Ticket status", ticket.status);
-      addRow("Seat", ticket.seat ?? "Assigned at check-in");
-      addRow("Payment reference", ticket.reference);
+      addRow("Event", receiptTicket.eventName);
+      addRow("Event date", formatEventDate(receiptTicket.eventDate));
+      addRow("Venue", `${receiptTicket.venue}, ${receiptTicket.city}`);
+      addRow("Ticket type", receiptTicket.ticketTypeName);
+      addRow("Amount paid", `NGN ${receiptTicket.price.toLocaleString("en-NG")}`);
+      addRow("Ticket status", receiptTicket.status);
+      addRow("Seat", receiptTicket.seat ?? "Assigned at check-in");
+      addRow("Payment reference", receiptTicket.reference);
       y += 8;
       receipt.setFontSize(9);
       receipt.setTextColor(100);
       receipt.text("Keep this receipt for your records.", margin, y);
 
-      const safeReference = ticket.reference.replace(/[^a-zA-Z0-9_-]/g, "-");
+      const safeReference = receiptTicket.reference.replace(/[^a-zA-Z0-9_-]/g, "-");
       receipt.save(`wanbiz-receipt-${safeReference}.pdf`);
     } catch {
       toast.error("Could not download the receipt. Please try again.");

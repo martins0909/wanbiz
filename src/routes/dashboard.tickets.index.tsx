@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ticketsQuery } from "@/lib/data";
 import { formatNaira, formatShortDate } from "@/lib/format";
@@ -16,7 +17,10 @@ export const Route = createFileRoute("/dashboard/tickets/")({
   head: () => ({
     meta: [
       { title: "My tickets — Wanbiz EventPass" },
-      { name: "description", content: "All your EventPass digital tickets with QR codes, seats and receipts." },
+      {
+        name: "description",
+        content: "All your EventPass digital tickets with QR codes, seats and receipts.",
+      },
       { property: "og:title", content: "My EventPass tickets" },
       { property: "og:description", content: "Digital tickets, QR codes, seats and receipts." },
     ],
@@ -33,7 +37,9 @@ function TicketsPage() {
   return (
     <div>
       <h2 className="text-lg font-bold">My tickets</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Tap a ticket to view its QR code, seat and receipt.</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Tap a ticket to view its QR code, seat and receipt.
+      </p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         {tickets.map((ticket) => (
           <Link
@@ -59,12 +65,24 @@ function TicketsPage() {
                 {formatShortDate(ticket.eventDate)} · {ticket.venue}, {ticket.city}
               </p>
               <p className="text-xs text-muted-foreground">
-                {ticket.ticketTypeName} · {formatNaira(ticket.price)} · {ticket.seat ?? "Seat at check-in"}
+                {ticket.ticketTypeName} · {formatNaira(ticket.price)} ·{" "}
+                {ticket.seat ?? "Seat at check-in"}
               </p>
               <p className="font-mono text-[0.7rem] text-muted-foreground">{ticket.reference}</p>
             </div>
           </Link>
         ))}
+        {tickets.length === 0 && (
+          <div className="rounded-xl border border-dashed border-border p-8 text-center sm:col-span-2">
+            <p className="font-medium">No tickets yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Tickets will appear here after a verified purchase.
+            </p>
+            <Button asChild variant="outline" className="mt-4">
+              <Link to="/events">Browse events</Link>
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

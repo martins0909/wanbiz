@@ -1,42 +1,54 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CalendarRange, Ticket, TrendingUp, Users } from "lucide-react";
+import { CalendarRange, Ticket } from "lucide-react";
 import { StatCard } from "@/components/shared/StatCard";
 import { Button } from "@/components/ui/button";
-import { eventsQuery } from "@/lib/data";
-import { formatNaira, formatShortDate } from "@/lib/format";
+import { organizerEventsQuery } from "@/lib/data/organizer";
+import { formatShortDate } from "@/lib/format";
 
 export const Route = createFileRoute("/organizer/")({
   head: () => ({
     meta: [
       { title: "Organizer overview — Wanbiz EventPass" },
-      { name: "description", content: "Track ticket sales, attendees and revenue in Naira across your EventPass events." },
+      {
+        name: "description",
+        content: "Track ticket sales, attendees and revenue in Naira across your EventPass events.",
+      },
       { property: "og:title", content: "EventPass organizer console" },
-      { property: "og:description", content: "Sales, attendees, seating, check-in and revenue in one console." },
+      {
+        property: "og:description",
+        content: "Sales, attendees, seating, check-in and revenue in one console.",
+      },
     ],
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(eventsQuery());
-  },
   component: OrganizerOverview,
 });
 
 function OrganizerOverview() {
-  const { data: events } = useSuspenseQuery(eventsQuery());
+  const { data: events = [], isPending, error } = useQuery(organizerEventsQuery());
   const mine = events.slice(0, 3);
-  const sold = mine.reduce((total, event) => total + (event.ticketsTotal - event.ticketsAvailable), 0);
-  const revenue = mine.reduce(
-    (total, event) => total + (event.ticketsTotal - event.ticketsAvailable) * event.startingPrice,
+  const published = events.filter((event) => event.status === "PUBLISHED").length;
+  const sold = events.reduce(
+    (total, event) => total + event.ticketTypes.reduce((count, ticket) => count + ticket.sold, 0),
+    0,
+  );
+  const capacity = events.reduce(
+    (total, event) =>
+      total + event.ticketTypes.reduce((count, ticket) => count + ticket.quantity, 0),
     0,
   );
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Live events" value={`${mine.length}`} icon={CalendarRange} />
-        <StatCard label="Tickets sold" value={sold.toLocaleString("en-NG")} icon={Ticket} tone="blue" />
-        <StatCard label="Gross revenue" value={formatNaira(revenue)} icon={TrendingUp} tone="red" />
-        <StatCard label="Unique attendees" value={Math.round(sold * 0.82).toLocaleString("en-NG")} icon={Users} />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Published events" value={`${published}`} icon={CalendarRange} />
+        <StatCard
+          label="Tickets sold"
+          value={sold.toLocaleString("en-NG")}
+          icon={Ticket}
+          tone="blue"
+        />
+        <StatCard label="Ticket capacity" value={capacity.toLocaleString("en-NG")} icon={Ticket} />
       </div>
 
       <section>
@@ -46,6 +58,12 @@ function OrganizerOverview() {
             <Link to="/organizer/events">View all</Link>
           </Button>
         </div>
+        {isPending && <p className="mt-4 text-sm text-muted-foreground">Loading your events…</p>}
+        {error && (
+          <p role="alert" className="mt-4 text-sm text-destructive">
+            {error.message}
+          </p>
+        )}
         <div className="mt-4 space-y-3">
           {mine.map((event) => (
             <div
@@ -58,22 +76,35 @@ function OrganizerOverview() {
                   {formatShortDate(event.date)} · {event.venue}, {event.city}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {(event.ticketsTotal - event.ticketsAvailable).toLocaleString("en-NG")} of{" "}
-                  {event.ticketsTotal.toLocaleString("en-NG")} tickets sold
+                  {event.ticketTypes
+                    .reduce((total, ticket) => total + ticket.sold, 0)
+                    .toLocaleString("en-NG")}{" "}
+                  tickets sold
                 </p>
               </div>
-              <Button asChild size="sm" variant="outline">
-                <Link to="/events/$eventSlug" params={{ eventSlug: event.slug }}>
-                  View public page
-                </Link>
-              </Button>
+              {event.status === "PUBLISHED" && (
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/events/$eventSlug" params={{ eventSlug: event.slug }}>
+                    View public page
+                  </Link>
+                </Button>
+              )}
             </div>
           ))}
+          {!isPending && !error && mine.length === 0 && (
+            <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              You have not created any events yet.
+              <Button asChild variant="link" className="px-1">
+                <Link to="/create-event">Create an event</Link>
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
       <p className="rounded-2xl border border-border bg-secondary/50 p-4 text-xs text-muted-foreground">
-        Live sales figures, payouts and QR check-in become available after verified payment and ticket records are connected.
+        Revenue, attendee details, and check-in counts will appear when verified payment and ticket
+        records are connected.
       </p>
     </div>
   );

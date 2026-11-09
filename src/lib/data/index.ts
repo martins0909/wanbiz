@@ -9,7 +9,7 @@ import type {
   WalletRecord,
 } from "@/lib/types";
 import { getPublishedEvents } from "./published-events";
-import { CATEGORIES, EVENTS, INVITATIONS, MEMBERSHIP, PRESALES, TICKETS, WALLET } from "./mock";
+import { CATEGORIES, EVENTS, MEMBERSHIP, PRESALES } from "./mock";
 
 /** Repository layer for the current seeded public catalog. */
 
@@ -80,23 +80,30 @@ export async function getPresale(id: string): Promise<PresaleCampaign | null> {
 }
 
 export async function listTickets(): Promise<TicketRecord[]> {
-  return TICKETS;
+  return [];
 }
 
-export async function getTicket(id: string): Promise<TicketRecord | null> {
-  return TICKETS.find((ticket) => ticket.id === id) ?? null;
+export async function getTicket(_id: string): Promise<TicketRecord | null> {
+  return null;
 }
 
 export async function listInvitations(): Promise<InvitationRecord[]> {
-  return INVITATIONS;
+  return [];
 }
 
 export async function getWallet(): Promise<WalletRecord> {
-  return WALLET;
+  return { balance: 0, pendingHold: 0, currency: "NGN", transactions: [] };
 }
 
 export async function getMembership(): Promise<MembershipRecord> {
-  return MEMBERSHIP;
+  return {
+    ...MEMBERSHIP,
+    membershipId: null,
+    memberName: null,
+    joinedAt: null,
+    eligibleEventsCount: 0,
+    history: [],
+  };
 }
 
 /* ------------------------------- query keys ------------------------------- */

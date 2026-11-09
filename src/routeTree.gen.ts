@@ -24,6 +24,7 @@ import { Route as ApiAdminRouteImport } from './routes/api.admin'
 import { Route as ApiAuthRouteImport } from './routes/api.auth'
 import { Route as ApiEventsRouteImport } from './routes/api.events'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
+import { Route as ApiOrganizerRouteImport } from './routes/api.organizer'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
 import { Route as CategoriesCategorySlugRouteImport } from './routes/categories.$categorySlug'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
@@ -119,6 +120,11 @@ const ApiEventsRoute = ApiEventsRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOrganizerRoute = ApiOrganizerRouteImport.update({
+  id: '/api/organizer',
+  path: '/api/organizer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/api/auth': typeof ApiAuthRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/organizer': typeof ApiOrganizerRoute
   '/categories/$categorySlug': typeof CategoriesCategorySlugRoute
   '/dashboard/invitations': typeof DashboardInvitationsRoute
   '/dashboard/membership': typeof DashboardMembershipRoute
@@ -280,6 +287,7 @@ export interface FileRoutesByTo {
   '/api/auth': typeof ApiAuthRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/organizer': typeof ApiOrganizerRoute
   '/categories/$categorySlug': typeof CategoriesCategorySlugRoute
   '/dashboard/invitations': typeof DashboardInvitationsRoute
   '/dashboard/membership': typeof DashboardMembershipRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/api/auth': typeof ApiAuthRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/organizer': typeof ApiOrganizerRoute
   '/categories/$categorySlug': typeof CategoriesCategorySlugRoute
   '/dashboard/invitations': typeof DashboardInvitationsRoute
   '/dashboard/membership': typeof DashboardMembershipRoute
@@ -359,6 +368,7 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/api/events'
     | '/api/health'
+    | '/api/organizer'
     | '/categories/$categorySlug'
     | '/dashboard/invitations'
     | '/dashboard/membership'
@@ -395,6 +405,7 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/api/events'
     | '/api/health'
+    | '/api/organizer'
     | '/categories/$categorySlug'
     | '/dashboard/invitations'
     | '/dashboard/membership'
@@ -433,6 +444,7 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/api/events'
     | '/api/health'
+    | '/api/organizer'
     | '/categories/$categorySlug'
     | '/dashboard/invitations'
     | '/dashboard/membership'
@@ -472,6 +484,7 @@ export interface RootRouteChildren {
   ApiAuthRoute: typeof ApiAuthRoute
   ApiEventsRoute: typeof ApiEventsRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiOrganizerRoute: typeof ApiOrganizerRoute
   CategoriesCategorySlugRoute: typeof CategoriesCategorySlugRoute
   EventsEventSlugRoute: typeof EventsEventSlugRoute
   PaymentCallbackRoute: typeof PaymentCallbackRoute
@@ -586,6 +599,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/organizer': {
+      id: '/api/organizer'
+      path: '/api/organizer'
+      fullPath: '/api/organizer'
+      preLoaderRoute: typeof ApiOrganizerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categories/': {
@@ -802,6 +822,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthRoute: ApiAuthRoute,
   ApiEventsRoute: ApiEventsRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiOrganizerRoute: ApiOrganizerRoute,
   CategoriesCategorySlugRoute: CategoriesCategorySlugRoute,
   EventsEventSlugRoute: EventsEventSlugRoute,
   PaymentCallbackRoute: PaymentCallbackRoute,
