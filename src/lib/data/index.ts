@@ -8,6 +8,7 @@ import type {
   TicketRecord,
   WalletRecord,
 } from "@/lib/types";
+import { getPublishedEvents } from "./published-events";
 import { CATEGORIES, EVENTS, INVITATIONS, MEMBERSHIP, PRESALES, TICKETS, WALLET } from "./mock";
 
 /** Repository layer for the current seeded public catalog. */
@@ -20,11 +21,14 @@ export interface EventFilters {
 }
 
 export async function listEvents(filters: EventFilters = {}): Promise<EventRecord[]> {
+  const publishedEvents = await getCatalogEvents();
   const q = filters.query?.trim().toLowerCase();
   const loc = filters.location?.trim().toLowerCase();
-  return EVENTS.filter((event) => {
-    if (q && !`${event.name} ${event.description} ${event.organizerName}`.toLowerCase().includes(q)) return false;
-    if (loc && !`${event.city} ${event.state} ${event.venue}`.toLowerCase().includes(loc)) return false;
+  return [...publishedEvents, ...EVENTS].filter((event) => {
+    if (q && !`${event.name} ${event.description} ${event.organizerName}`.toLowerCase().includes(q))
+      return false;
+    if (loc && !`${event.city} ${event.state} ${event.venue}`.toLowerCase().includes(loc))
+      return false;
     if (filters.date && !event.date.startsWith(filters.date)) return false;
     if (filters.category && filters.category !== "all" && event.category !== filters.category) return false;
     return true;
@@ -32,18 +36,39 @@ export async function listEvents(filters: EventFilters = {}): Promise<EventRecor
 }
 
 export async function listFeaturedEvents(): Promise<EventRecord[]> {
-  return EVENTS.filter((event) => event.featured);
+  return [...(await getCatalogEvents()), ...EVENTS.filter((event) => event.featured)];
 }
 
 export async function getEvent(idOrSlug: string): Promise<EventRecord | null> {
-  return EVENTS.find((event) => event.id === idOrSlug || event.slug === idOrSlug) ?? null;
+  const seededEvent = EVENTS.find((event) => event.id === idOrSlug || event.slug === idOrSlug);
+  if (seededEvent) return seededEvent;
+  return (
+    (await getCatalogEvents()).find((event) => event.id === idOrSlug || event.slug === idOrSlug) ??
+    null
+  );
 }
 
 export async function listCategories() {
+  const events = await listEvents();
   return CATEGORIES.map((category) => ({
     ...category,
-    eventCount: EVENTS.filter((event) => event.category === category.slug).length,
+    eventCount: events.filter((event) => event.category === category.slug).length,
   }));
+}
+
+async function getCatalogEvents(): Promise<EventRecord[]> {
+  try {
+    const publishedEvents = await getPublishedEvents();
+    return publishedEvents.map((event) => ({
+      ...event,
+      image:
+        event.image ||
+        EVENTS.find((seededEvent) => seededEvent.category === event.category)?.image ||
+        EVENTS[0]!.image,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function listPresales(): Promise<PresaleCampaign[]> {

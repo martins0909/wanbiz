@@ -1,5 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 import { QrPlaceholder } from "@/components/shared/QrPlaceholder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +42,57 @@ export const Route = createFileRoute("/dashboard/tickets/$ticketId")({
 function TicketDetailPage() {
   const { ticketId } = Route.useParams();
   const { data: ticket } = useSuspenseQuery(ticketQuery(ticketId));
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   if (!ticket) return null;
+
+  async function downloadReceipt() {
+    setDownloadingReceipt(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const receipt = new jsPDF();
+      const margin = 20;
+      let y = 24;
+      const addRow = (label: string, value: string) => {
+        receipt.setFont("helvetica", "bold");
+        receipt.text(label, margin, y);
+        receipt.setFont("helvetica", "normal");
+        const lines = receipt.splitTextToSize(value, 120);
+        receipt.text(lines, 70, y);
+        y += Math.max(10, lines.length * 6 + 3);
+      };
+
+      receipt.setFont("helvetica", "bold");
+      receipt.setFontSize(18);
+      receipt.text("WANBIZ EVENTPASS", margin, y);
+      y += 12;
+      receipt.setFontSize(13);
+      receipt.text("TICKET RECEIPT", margin, y);
+      y += 10;
+      receipt.setDrawColor(210);
+      receipt.line(margin, y, 190, y);
+      y += 12;
+      receipt.setFontSize(10);
+      addRow("Event", ticket.eventName);
+      addRow("Event date", formatEventDate(ticket.eventDate));
+      addRow("Venue", `${ticket.venue}, ${ticket.city}`);
+      addRow("Ticket type", ticket.ticketTypeName);
+      addRow("Amount paid", `NGN ${ticket.price.toLocaleString("en-NG")}`);
+      addRow("Ticket status", ticket.status);
+      addRow("Seat", ticket.seat ?? "Assigned at check-in");
+      addRow("Payment reference", ticket.reference);
+      y += 8;
+      receipt.setFontSize(9);
+      receipt.setTextColor(100);
+      receipt.text("Keep this receipt for your records.", margin, y);
+
+      const safeReference = ticket.reference.replace(/[^a-zA-Z0-9_-]/g, "-");
+      receipt.save(`wanbiz-receipt-${safeReference}.pdf`);
+    } catch {
+      toast.error("Could not download the receipt. Please try again.");
+    } finally {
+      setDownloadingReceipt(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -68,8 +120,14 @@ function TicketDetailPage() {
           </div>
           <div className="flex flex-col items-center gap-3">
             <QrPlaceholder label="Present this QR code at the gate" />
-            <Button variant="outline" size="sm" className="w-full">
-              Download receipt
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled={downloadingReceipt}
+              onClick={() => void downloadReceipt()}
+            >
+              {downloadingReceipt ? "Preparing receipt…" : "Download receipt"}
             </Button>
             <Button variant="outline" size="sm" className="w-full">
               Transfer ticket
@@ -79,8 +137,8 @@ function TicketDetailPage() {
       </div>
 
       <p className="rounded-2xl border border-border bg-secondary/50 p-4 text-xs text-muted-foreground">
-        Receipt downloads, ticket transfers and live QR scanning will be available after ticket issuance is connected to
-        verified payments. Ticket data shown here is currently demo content.
+        Ticket transfers and live QR scanning will be available after ticket issuance is connected
+        to verified payments. Ticket data shown here is currently demo content.
       </p>
     </div>
   );

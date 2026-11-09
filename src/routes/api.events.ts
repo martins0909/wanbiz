@@ -27,6 +27,12 @@ const eventSchema = z.object({
   acceptsTicketPass: z.boolean(),
   seatingEnabled: z.boolean(),
   presale: z.boolean(),
+  payoutDetails: z
+    .object({
+      bankName: z.string().trim().max(120),
+      accountNumber: z.string().trim().max(40),
+    })
+    .optional(),
   ticketTypes: z
     .array(
       z.object({
@@ -55,14 +61,20 @@ export const Route = createFileRoute("/api/events")({
           const formData = await request.formData();
           const eventPayload = formData.get("event");
           if (typeof eventPayload !== "string") {
-            return Response.json({ error: "Check the event details and try again." }, { status: 400 });
+            return Response.json(
+              { error: "Check the event details and try again." },
+              { status: 400 },
+            );
           }
 
           let eventInput: unknown;
           try {
             eventInput = JSON.parse(eventPayload);
           } catch {
-            return Response.json({ error: "Check the event details and try again." }, { status: 400 });
+            return Response.json(
+              { error: "Check the event details and try again." },
+              { status: 400 },
+            );
           }
           const parsed = eventSchema.safeParse(eventInput);
           if (!parsed.success)
@@ -73,10 +85,10 @@ export const Route = createFileRoute("/api/events")({
 
           const data = parsed.data;
           const imageFile = formData.get("image");
-          if (imageFile !== null && !(imageFile instanceof File)) {
-            return Response.json({ error: "Choose a valid image file." }, { status: 400 });
+          if (!(imageFile instanceof File) || imageFile.size === 0) {
+            return Response.json({ error: "Choose an event image to upload." }, { status: 400 });
           }
-          const image = imageFile instanceof File ? await uploadEventImage(imageFile) : "";
+          const image = await uploadEventImage(imageFile);
           const db = await getMongoDb();
           const eventId = randomUUID();
           const slugBase = data.name
@@ -92,6 +104,7 @@ export const Route = createFileRoute("/api/events")({
             slug: `${slugBase}-${eventId.slice(0, 8)}`,
             ownerId: user.id,
             ownerEmail: user.email,
+            organizerName: user.organizationName || user.fullName,
             name: data.name,
             category: data.category,
             date: data.date,
@@ -102,6 +115,7 @@ export const Route = createFileRoute("/api/events")({
             acceptsTicketPass: data.acceptsTicketPass,
             seatingEnabled: data.seatingEnabled,
             presale: data.presale,
+            payoutDetails: data.payoutDetails ?? { bankName: "", accountNumber: "" },
             image,
             status: "DRAFT",
             ticketTypes: data.ticketTypes.map((ticket) => ({

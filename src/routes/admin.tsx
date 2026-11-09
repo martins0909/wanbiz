@@ -7,8 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CATEGORIES } from "@/lib/data";
 import { useAuth } from "@/lib/auth/auth-context";
-import { formatNaira } from "@/lib/format";
+import { formatEventDate, formatNaira } from "@/lib/format";
 
 type Section = "overview" | "users" | "events" | "payments";
 type AdminData = Record<string, unknown>;
@@ -276,35 +284,168 @@ function EventsTable({
   onStatusChange: (id: string, status: string) => void;
 }) {
   const events = (data["events"] ?? []) as Array<Record<string, unknown>>;
+  const [selectedEvent, setSelectedEvent] = useState<Record<string, unknown> | null>(null);
   return (
-    <DataTable headers={["Event", "Organizer", "Date", "Status", "Action"]}>
-      {events.map((item) => (
-        <tr key={String(item["_id"])}>
-          <td className="px-3 py-3 font-medium">{String(item["name"] ?? "")}</td>
-          <td className="px-3 py-3">{String(item["ownerEmail"] ?? "")}</td>
-          <td className="px-3 py-3">{String(item["date"] ?? "")}</td>
-          <td className="px-3 py-3">
-            <Badge variant="outline">{String(item["status"] ?? "DRAFT")}</Badge>
-          </td>
-          <td className="px-3 py-3">
-            {item["status"] !== "CANCELLED" && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  onStatusChange(
-                    String(item["_id"]),
-                    item["status"] === "PUBLISHED" ? "DRAFT" : "PUBLISHED",
-                  )
-                }
-              >
-                {item["status"] === "PUBLISHED" ? "Unpublish" : "Publish"}
-              </Button>
-            )}
-          </td>
-        </tr>
-      ))}
-    </DataTable>
+    <>
+      <DataTable headers={["Event", "Organizer", "Date", "Status", "Action"]}>
+        {events.map((item) => (
+          <tr key={String(item["_id"])}>
+            <td className="px-3 py-3 font-medium">{String(item["name"] ?? "")}</td>
+            <td className="px-3 py-3">{String(item["ownerEmail"] ?? "")}</td>
+            <td className="px-3 py-3">{String(item["date"] ?? "")}</td>
+            <td className="px-3 py-3">
+              <Badge variant="outline">{String(item["status"] ?? "DRAFT")}</Badge>
+            </td>
+            <td className="px-3 py-3">
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => setSelectedEvent(item)}>
+                  Overview
+                </Button>
+                {item["status"] !== "CANCELLED" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      onStatusChange(
+                        String(item["_id"]),
+                        item["status"] === "PUBLISHED" ? "DRAFT" : "PUBLISHED",
+                      )
+                    }
+                  >
+                    {item["status"] === "PUBLISHED" ? "Unpublish" : "Publish"}
+                  </Button>
+                )}
+              </div>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+      <Dialog
+        open={selectedEvent !== null}
+        onOpenChange={(open) => !open && setSelectedEvent(null)}
+      >
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+          {selectedEvent && <EventOverview event={selectedEvent} />}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function EventOverview({ event }: { event: Record<string, unknown> }) {
+  const ticketTypes = Array.isArray(event["ticketTypes"])
+    ? (event["ticketTypes"] as Array<Record<string, unknown>>)
+    : [];
+  const payoutDetails =
+    event["payoutDetails"] && typeof event["payoutDetails"] === "object"
+      ? (event["payoutDetails"] as Record<string, unknown>)
+      : {};
+  const category = CATEGORIES.find((item) => item.slug === event["category"]);
+  const image = String(event["image"] ?? "");
+  const value = (key: string) => String(event[key] ?? "Not provided");
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Event overview</DialogTitle>
+        <DialogDescription>
+          {value("name")} · {value("ownerEmail")}
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-6 text-sm">
+        <section className="space-y-3">
+          <h3 className="font-semibold">Event details</h3>
+          {image ? (
+            <img
+              src={image}
+              alt={value("name")}
+              className="max-h-64 w-full rounded-md object-cover"
+            />
+          ) : (
+            <p className="text-muted-foreground">No event image provided.</p>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <EventDetail label="Event name" value={value("name")} />
+            <EventDetail label="Category" value={category?.name ?? value("category")} />
+            <EventDetail
+              label="Date and start time"
+              value={`${event["date"] ? formatEventDate(String(event["date"])) : "Not provided"} · ${value("time")}`}
+            />
+            <EventDetail label="Venue" value={value("venue")} />
+            <EventDetail label="City" value={value("city")} />
+            <EventDetail label="Status" value={value("status")} />
+            <EventDetail
+              label="Description"
+              value={value("description")}
+              className="sm:col-span-2"
+            />
+          </div>
+        </section>
+        <section className="space-y-3">
+          <h3 className="font-semibold">Ticket types</h3>
+          {ticketTypes.length ? (
+            <div className="divide-y rounded-md border">
+              {ticketTypes.map((ticket, index) => (
+                <div key={String(ticket["id"] ?? index)} className="grid gap-2 p-3 sm:grid-cols-3">
+                  <EventDetail label="Ticket" value={String(ticket["name"] ?? "Not provided")} />
+                  <EventDetail label="Price" value={formatNaira(Number(ticket["price"] ?? 0))} />
+                  <EventDetail
+                    label="Quantity"
+                    value={String(ticket["quantity"] ?? "Not provided")}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No ticket types provided.</p>
+          )}
+        </section>
+        <section className="space-y-3">
+          <h3 className="font-semibold">Event options</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <EventDetail
+              label="Accepts TicketPass members"
+              value={event["acceptsTicketPass"] ? "Yes" : "No"}
+            />
+            <EventDetail label="Seating enabled" value={event["seatingEnabled"] ? "Yes" : "No"} />
+            <EventDetail
+              label="Presale sponsorship campaign"
+              value={event["presale"] ? "Yes" : "No"}
+            />
+          </div>
+        </section>
+        <section className="space-y-3">
+          <h3 className="font-semibold">Payout details</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <EventDetail
+              label="Bank name"
+              value={String(payoutDetails["bankName"] ?? "Not provided")}
+            />
+            <EventDetail
+              label="Account number"
+              value={String(payoutDetails["accountNumber"] ?? "Not provided")}
+            />
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}
+
+function EventDetail({
+  label,
+  value,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="whitespace-pre-wrap break-words">{value}</p>
+    </div>
   );
 }
 

@@ -53,5 +53,13 @@ export async function uploadEventImage(file: File): Promise<string> {
   ) {
     throw new Error("Cloudinary returned an invalid upload response.");
   }
-  return result.secure_url;
+  const imageUrl = new URL(result.secure_url);
+  if (
+    imageUrl.protocol !== "https:" ||
+    imageUrl.hostname !== "res.cloudinary.com" ||
+    !imageUrl.pathname.startsWith(`/${cloudName}/`)
+  ) {
+    throw new Error("Cloudinary returned an image URL outside the configured account.");
+  }
+  return imageUrl.toString();
 }
